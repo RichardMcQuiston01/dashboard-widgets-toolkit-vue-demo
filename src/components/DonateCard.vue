@@ -19,7 +19,9 @@ withDefaults(
   }
 );
 
-const STORAGE_KEY = 'donate-card-dismissed';
+// Namespaced: every GitHub Pages project of one account shares an origin, so a
+// plain key would be shared with (and dismissed by) the other demos.
+const STORAGE_KEY = 'dashboard-widgets-toolkit-vue-demo:donate-card-dismissed';
 
 // Start hidden and reveal after mount: reading localStorage while rendering
 // breaks server rendering, and flashing the card then hiding it is worse than

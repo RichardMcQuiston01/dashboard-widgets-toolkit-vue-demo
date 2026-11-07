@@ -54,7 +54,12 @@ import {
   widgetProviders,
   type ShopContext,
 } from './data/widgets';
-import { INTRO_DELAY_MS, INTRO_TEXT, INTRO_TITLE } from './intro';
+import {
+  INTRO_DELAY_MS,
+  INTRO_LEAD,
+  INTRO_SECTIONS,
+  INTRO_TITLE,
+} from './intro';
 
 type Theme = 'light' | 'dark';
 
@@ -595,9 +600,21 @@ onBeforeUnmount(() => window.clearTimeout(introTimer));
           close-label="Close introduction"
           @close="introOpen = false"
         >
-          <p class="max-w-3xl text-sm text-slate-700 dark:text-slate-300">
-            {{ INTRO_TEXT }}
-          </p>
+          <div
+            class="max-w-3xl space-y-4 text-sm text-slate-700 dark:text-slate-300"
+          >
+            <p class="text-base">{{ INTRO_LEAD }}</p>
+            <section v-for="section in INTRO_SECTIONS" :key="section.heading">
+              <h3
+                class="mb-1 text-sm font-semibold text-brand-700 dark:text-brand-200"
+              >
+                {{ section.heading }}
+              </h3>
+              <ul class="list-disc space-y-1 pl-5 marker:text-brand-400">
+                <li v-for="item in section.items" :key="item">{{ item }}</li>
+              </ul>
+            </section>
+          </div>
         </SettingsDialog>
 
         <div :ref="setGridElement">
