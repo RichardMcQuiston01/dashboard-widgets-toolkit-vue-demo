@@ -1,0 +1,34 @@
+{
+  "name": "dashboard-widgets-toolkit-vue-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vue 3 demo for @richardmcquiston01/dashboard-widgets-toolkit.",
+  "license": "Apache-2.0",
+  "author": "Richard McQuiston (https://richardmcquiston.com/)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@richardmcquiston01/dashboard-widgets-toolkit": "^0.37.0",
+    "vue": "^3.5.45"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.3.5",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.6",
+    "vue-tsc": "^3.3.14"
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://ko-fi.com/P1V529Z7ZP"
+  }
+}
