@@ -15,7 +15,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@richardmcquiston01/dashboard-widgets-toolkit": "^0.37.0",
+    "@richardmcquiston01/dashboard-widgets-toolkit": "^0.37.1",
     "vue": "^3.5.45"
   },
   "devDependencies": {

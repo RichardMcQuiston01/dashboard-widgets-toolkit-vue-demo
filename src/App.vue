@@ -19,7 +19,7 @@ import {
   useWidgets,
   type CellFormatter,
   type CellFormatterProblem,
-  type DashboardProps,
+  type DetailExportRequest,
   type DetailLoader,
 } from '@richardmcquiston01/dashboard-widgets-toolkit/vue';
 import {
@@ -89,10 +89,6 @@ function reportFormatterProblem(problem: CellFormatterProblem): void {
 function reportExportProblem(message: string): void {
   console.warn(message);
 }
-
-type ExportDetailRequest = Parameters<
-  NonNullable<DashboardProps['onExportDetail']>
->[0];
 
 const STATUS_TEXT = {
   loading: 'Loading your layout…',
@@ -302,7 +298,7 @@ const loadDetail: DetailLoader = (definition, { signal, query }) =>
 
 // Server-mode detail views hold one page, so their Download CSV button asks for
 // every row that matches the search and filters instead.
-function exportDetail(request: ExportDetailRequest) {
+function exportDetail(request: DetailExportRequest) {
   return loadWidgetDetail(
     request.widgetKey,
     localeOption.value,
@@ -634,7 +630,7 @@ onBeforeUnmount(() => window.clearTimeout(introTimer));
               :backup="backup"
               :on-backup="setBackup"
               :edit-mode="editMode"
-              :draggable="true"
+              draggable
               :filters="dashboardFilters"
               :filter-values="filterState.values.value"
               :on-filter-change="filterState.setValues"
@@ -645,7 +641,7 @@ onBeforeUnmount(() => window.clearTimeout(introTimer));
               "
               :override-locks="isAdmin"
               :on-retry="refresh"
-              :freshness="true"
+              freshness
               :on-refresh="refresh"
               :export-formats="['csv', 'svg', 'png']"
               :on-export-error="reportExportProblem"
