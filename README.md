@@ -19,7 +19,7 @@
 Single Page Application (SPA) demo of the Vue renderers in the
 [dashboard-widgets-toolkit](https://github.com/RichardMcQuiston01/dashboard-widgets-toolkit)
 NPM package (`@richardmcquiston01/dashboard-widgets-toolkit/vue`). It mirrors the
-interactive dashboard tab of the
+interactive dashboard and Widget Builder tabs of the
 [React demo](https://github.com/RichardMcQuiston01/dashboard-widgets-toolkit-demo).
 
 **Live demo:** https://richardmcquiston01.github.io/dashboard-widgets-toolkit-vue-demo/
@@ -58,6 +58,12 @@ A Vite + Vue 3 + TypeScript + Tailwind CSS app built from render functions and
 - Declared options, alternate views and clones through the Options dialog.
 - Themes (including `checkTheme` warnings), locales, light and dark mode.
 - A layout saved to `localStorage` through a storage adapter.
+- A **Widget Builder** tab (`#builder`): make widgets from a form over three
+  described data sources (`useWidgetDraft`, `WidgetOptionsForm`,
+  `WidgetViewsForm`, `WidgetPreview`), watch a live preview, and see the saved
+  widgets load on a dashboard through the demo's providers. Switch to **Viewer**
+  to see the same screen under a policy, where the server's check
+  (`validateViewerSave`) refuses anything more, and try to cheat it.
 
 Widgets and simulated providers live in [`src/data/widgets.ts`](./src/data/widgets.ts).
 
