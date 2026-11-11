@@ -34,8 +34,10 @@ import {
 
 import DonateCard from './components/DonateCard.vue';
 import SettingsDialog from './components/SettingsDialog.vue';
+import TabList from './components/TabList.vue';
 import ThemePicker from './components/ThemePicker.vue';
 import ToggleSwitch from './components/ToggleSwitch.vue';
+import WidgetBuilder from './components/WidgetBuilder.vue';
 import { statusBadge } from './components/status-badge';
 import { LAYOUT_SCOPE, PAGED_LAYOUT, layoutPersistence } from './data/layouts';
 import {
@@ -54,12 +56,7 @@ import {
   widgetProviders,
   type ShopContext,
 } from './data/widgets';
-import {
-  INTRO_DELAY_MS,
-  INTRO_LEAD,
-  INTRO_SECTIONS,
-  INTRO_TITLE,
-} from './intro';
+import { INTRO_DELAY_MS, TAB_IDS, TAB_INTROS, type TabId } from './intro';
 
 type Theme = 'light' | 'dark';
 
@@ -118,7 +115,39 @@ const isFilled = ref<boolean>(true);
 const showErrorDemo = ref<boolean>(false);
 const outage = ref<boolean>(false);
 const settingsOpen = ref<boolean>(false);
-const introOpen = ref<boolean>(false);
+const introTab = ref<TabId | undefined>(undefined);
+
+// ---- Tabs (the hash names the open one) -----------------------------------
+
+const TABS: readonly { readonly id: TabId; readonly label: string }[] = [
+  { id: 'dashboard', label: 'Interactive dashboard' },
+  { id: 'builder', label: 'Widget Builder' },
+];
+
+function readTabFromHash(): TabId {
+  const hashValue: string = window.location.hash.replace('#', '');
+  return TAB_IDS.find((id) => id === hashValue) ?? 'dashboard';
+}
+
+const activeTab = ref<TabId>(readTabFromHash());
+
+function changeTab(tabId: string): void {
+  const next: TabId | undefined = TAB_IDS.find((id) => id === tabId);
+  if (next === undefined) return;
+  activeTab.value = next;
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${window.location.search}#${next}`
+  );
+}
+
+function handleHashChange(): void {
+  activeTab.value = readTabFromHash();
+}
+
+const introOpen = computed<boolean>(() => introTab.value !== undefined);
+const intro = computed(() => TAB_INTROS[introTab.value ?? activeTab.value]);
 
 const localeOption = computed<LocaleOption>(
   () => LOCALES[localeIndex.value] ?? (LOCALES[0] as LocaleOption)
@@ -307,15 +336,29 @@ function exportDetail(request: DetailExportRequest) {
   );
 }
 
-// ---- The introduction opens once per page load ----------------------------
+// ---- A tab's introduction opens once per page load, shortly after it shows --
 
+const introsShown = new Set<TabId>();
 let introTimer: number | undefined;
-onMounted(() => {
-  introTimer = window.setTimeout(() => {
-    introOpen.value = true;
-  }, INTRO_DELAY_MS);
+
+watch(
+  activeTab,
+  (tab) => {
+    window.clearTimeout(introTimer);
+    if (introsShown.has(tab)) return;
+    introTimer = window.setTimeout(() => {
+      introsShown.add(tab);
+      introTab.value = tab;
+    }, INTRO_DELAY_MS);
+  },
+  { immediate: true }
+);
+
+onMounted(() => window.addEventListener('hashchange', handleHashChange));
+onBeforeUnmount(() => {
+  window.clearTimeout(introTimer);
+  window.removeEventListener('hashchange', handleHashChange);
 });
-onBeforeUnmount(() => window.clearTimeout(introTimer));
 </script>
 
 <template>
@@ -360,300 +403,364 @@ onBeforeUnmount(() => window.clearTimeout(introTimer));
             </a>
           </p>
         </div>
+        <div class="mt-4">
+          <TabList :tabs="TABS" :active-id="activeTab" @change="changeTab" />
+        </div>
       </div>
     </header>
 
-    <main class="mx-auto max-w-6xl px-4 pt-8 pb-16 sm:px-6">
-      <section aria-labelledby="dashboard-heading">
-        <h2 id="dashboard-heading" class="sr-only">{{ INTRO_TITLE }}</h2>
+    <main class="mx-auto max-w-6xl px-4 pt-2 pb-16 sm:px-6">
+      <div
+        id="panel-dashboard"
+        role="tabpanel"
+        aria-labelledby="tab-dashboard"
+        class="pt-6"
+        :hidden="activeTab !== 'dashboard'"
+      >
+        <section aria-labelledby="dashboard-heading">
+          <h2 id="dashboard-heading" class="sr-only">
+            {{ TAB_INTROS.dashboard.title }}
+          </h2>
 
-        <div class="mb-4 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            :class="iconButtonClass"
-            aria-haspopup="dialog"
-            aria-label="Settings"
-            title="Settings"
-            @click="settingsOpen = true"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              aria-hidden="true"
-              focusable="false"
+          <div class="mb-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              :class="iconButtonClass"
+              aria-haspopup="dialog"
+              aria-label="Settings"
+              title="Settings"
+              @click="settingsOpen = true"
             >
-              <path
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.4-2.7a1.2 1.2 0 0 0 .24 1.32l.04.04a1.45 1.45 0 1 1-2.05 2.05l-.04-.04a1.2 1.2 0 0 0-1.32-.24 1.2 1.2 0 0 0-.73 1.1v.12a1.45 1.45 0 1 1-2.9 0v-.06a1.2 1.2 0 0 0-.79-1.1 1.2 1.2 0 0 0-1.32.24l-.04.04a1.45 1.45 0 1 1-2.05-2.05l.04-.04a1.2 1.2 0 0 0 .24-1.32 1.2 1.2 0 0 0-1.1-.73h-.12a1.45 1.45 0 1 1 0-2.9h.06a1.2 1.2 0 0 0 1.1-.79 1.2 1.2 0 0 0-.24-1.32l-.04-.04A1.45 1.45 0 1 1 8.1 5.4l.04.04a1.2 1.2 0 0 0 1.32.24h.06a1.2 1.2 0 0 0 .73-1.1v-.12a1.45 1.45 0 1 1 2.9 0v.06a1.2 1.2 0 0 0 .73 1.1 1.2 1.2 0 0 0 1.32-.24l.04-.04a1.45 1.45 0 1 1 2.05 2.05l-.04.04a1.2 1.2 0 0 0-.24 1.32v.06a1.2 1.2 0 0 0 1.1.73h.12a1.45 1.45 0 1 1 0 2.9h-.06a1.2 1.2 0 0 0-1.1.73Z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              :class="iconButtonClass"
+              aria-label="Refresh data"
+              title="Refresh data"
+              @click="refreshData"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.8"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm7.4-2.7a1.2 1.2 0 0 0 .24 1.32l.04.04a1.45 1.45 0 1 1-2.05 2.05l-.04-.04a1.2 1.2 0 0 0-1.32-.24 1.2 1.2 0 0 0-.73 1.1v.12a1.45 1.45 0 1 1-2.9 0v-.06a1.2 1.2 0 0 0-.79-1.1 1.2 1.2 0 0 0-1.32.24l-.04.04a1.45 1.45 0 1 1-2.05-2.05l.04-.04a1.2 1.2 0 0 0 .24-1.32 1.2 1.2 0 0 0-1.1-.73h-.12a1.45 1.45 0 1 1 0-2.9h.06a1.2 1.2 0 0 0 1.1-.79 1.2 1.2 0 0 0-.24-1.32l-.04-.04A1.45 1.45 0 1 1 8.1 5.4l.04.04a1.2 1.2 0 0 0 1.32.24h.06a1.2 1.2 0 0 0 .73-1.1v-.12a1.45 1.45 0 1 1 2.9 0v.06a1.2 1.2 0 0 0 .73 1.1 1.2 1.2 0 0 0 1.32-.24l.04-.04a1.45 1.45 0 1 1 2.05 2.05l-.04.04a1.2 1.2 0 0 0-.24 1.32v.06a1.2 1.2 0 0 0 1.1.73h.12a1.45 1.45 0 1 1 0 2.9h-.06a1.2 1.2 0 0 0-1.1.73Z"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            :class="iconButtonClass"
-            aria-label="Refresh data"
-            title="Refresh data"
-            @click="refreshData"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              focusable="false"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              :class="iconButtonClass"
+              aria-haspopup="dialog"
+              aria-label="About this page"
+              title="About this page"
+              @click="introTab = 'dashboard'"
             >
-              <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            :class="iconButtonClass"
-            aria-haspopup="dialog"
-            aria-label="About this page"
-            title="About this page"
-            @click="introOpen = true"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 11v5.5M12 7.6v.01" />
-            </svg>
-          </button>
-          <ToggleSwitch
-            v-model="isAdmin"
-            label="Administrator"
-            title="Administrator: may change locked widgets"
-          />
-        </div>
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v5.5M12 7.6v.01" />
+              </svg>
+            </button>
+            <ToggleSwitch
+              v-model="isAdmin"
+              label="Administrator"
+              title="Administrator: may change locked widgets"
+            />
+          </div>
 
-        <div class="mb-4 space-y-2 text-sm" role="status" aria-live="polite">
-          <p class="text-slate-600 dark:text-slate-400">
-            {{ STATUS_TEXT[status] }}
-            <span
-              v-if="storageError !== null"
-              class="ml-1 text-rose-700 dark:text-rose-300"
+          <div class="mb-4 space-y-2 text-sm" role="status" aria-live="polite">
+            <p class="text-slate-600 dark:text-slate-400">
+              {{ STATUS_TEXT[status] }}
+              <span
+                v-if="storageError !== null"
+                class="ml-1 text-rose-700 dark:text-rose-300"
+              >
+                {{ storageError }} The dashboard keeps working with the layout
+                in memory.
+              </span>
+            </p>
+            <p
+              v-if="remoteLayout !== null"
+              class="flex flex-wrap items-center gap-2"
             >
-              {{ storageError }} The dashboard keeps working with the layout in
-              memory.
-            </span>
-          </p>
-          <p
-            v-if="remoteLayout !== null"
-            class="flex flex-wrap items-center gap-2"
-          >
-            Layout changed in another tab. Use that version?
-            <button
-              type="button"
-              :class="noticeButtonClass"
-              aria-label="Use the other tab's layout"
-              @click="resolveRemote('use')"
+              Layout changed in another tab. Use that version?
+              <button
+                type="button"
+                :class="noticeButtonClass"
+                aria-label="Use the other tab's layout"
+                @click="resolveRemote('use')"
+              >
+                ✓
+              </button>
+              <button
+                type="button"
+                :class="noticeButtonClass"
+                aria-label="Keep this tab's layout"
+                @click="resolveRemote('ignore')"
+              >
+                X
+              </button>
+            </p>
+            <p
+              v-if="conflict !== null"
+              class="flex flex-wrap items-center gap-2"
             >
-              ✓
-            </button>
-            <button
-              type="button"
-              :class="noticeButtonClass"
-              aria-label="Keep this tab's layout"
-              @click="resolveRemote('ignore')"
-            >
-              X
-            </button>
-          </p>
-          <p v-if="conflict !== null" class="flex flex-wrap items-center gap-2">
-            Someone else saved a different layout. Keep yours?
-            <button
-              type="button"
-              :class="noticeButtonClass"
-              @click="resolveConflict('mine')"
-            >
-              Keep mine
-            </button>
-            <button
-              type="button"
-              :class="noticeButtonClass"
-              @click="resolveConflict('theirs')"
-            >
-              Use theirs
-            </button>
-          </p>
-        </div>
+              Someone else saved a different layout. Keep yours?
+              <button
+                type="button"
+                :class="noticeButtonClass"
+                @click="resolveConflict('mine')"
+              >
+                Keep mine
+              </button>
+              <button
+                type="button"
+                :class="noticeButtonClass"
+                @click="resolveConflict('theirs')"
+              >
+                Use theirs
+              </button>
+            </p>
+          </div>
 
-        <SettingsDialog
-          :open="settingsOpen"
-          title="Settings"
-          close-label="Close settings"
-          @close="settingsOpen = false"
-        >
-          <fieldset class="mb-5">
-            <legend
-              class="mb-2 text-sm font-semibold text-brand-700 dark:text-brand-200"
-            >
-              Demo options
-            </legend>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <ToggleSwitch
-                label="Pages"
-                hint="Three pages with a page bar, or one page."
-                :model-value="hasPages"
-                @update:model-value="togglePages"
-              />
-              <ToggleSwitch
-                v-model="isFilled"
-                label="Fill widgets"
-                hint="Cards stretch to fill free space in their row."
-              />
-              <ToggleSwitch
-                v-model="showErrorDemo"
-                label="Error demo"
-                hint="Adds a widget whose provider fails."
-              />
-              <ToggleSwitch
-                label="Simulate outage"
-                hint="Refreshing Revenue, Refund rate or Revenue by month fails."
-                :model-value="outage"
-                @update:model-value="toggleOutage"
-              />
-            </div>
-            <label class="mt-4 flex flex-wrap items-center gap-2 text-sm">
-              <span class="font-medium">Edit controls</span>
+          <SettingsDialog
+            :open="settingsOpen"
+            title="Settings"
+            close-label="Close settings"
+            @close="settingsOpen = false"
+          >
+            <fieldset class="mb-5">
+              <legend
+                class="mb-2 text-sm font-semibold text-brand-700 dark:text-brand-200"
+              >
+                Demo options
+              </legend>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <ToggleSwitch
+                  label="Pages"
+                  hint="Three pages with a page bar, or one page."
+                  :model-value="hasPages"
+                  @update:model-value="togglePages"
+                />
+                <ToggleSwitch
+                  v-model="isFilled"
+                  label="Fill widgets"
+                  hint="Cards stretch to fill free space in their row."
+                />
+                <ToggleSwitch
+                  v-model="showErrorDemo"
+                  label="Error demo"
+                  hint="Adds a widget whose provider fails."
+                />
+                <ToggleSwitch
+                  label="Simulate outage"
+                  hint="Refreshing Revenue, Refund rate or Revenue by month fails."
+                  :model-value="outage"
+                  @update:model-value="toggleOutage"
+                />
+              </div>
+              <label class="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                <span class="font-medium">Edit controls</span>
+                <select
+                  v-model="editMode"
+                  class="rounded-md border border-brand-200 bg-white px-2 py-1.5 dark:border-brand-700 dark:bg-brand-900"
+                >
+                  <option value="toggle">Behind Customize</option>
+                  <option value="always">Always shown</option>
+                </select>
+              </label>
+            </fieldset>
+            <fieldset class="mb-5">
+              <legend
+                class="mb-2 text-sm font-semibold text-brand-700 dark:text-brand-200"
+              >
+                Mode
+              </legend>
+              <div class="flex gap-4 text-sm">
+                <label
+                  v-for="mode in ['light', 'dark'] as const"
+                  :key="mode"
+                  class="flex items-center gap-2"
+                >
+                  <input
+                    v-model="theme"
+                    type="radio"
+                    name="color-mode"
+                    :value="mode"
+                  />
+                  {{ mode === 'light' ? 'Light' : 'Dark' }}
+                </label>
+              </div>
+            </fieldset>
+            <ThemePicker
+              :choice="themeChoice"
+              :error="builtTheme.ok ? null : builtTheme.error"
+              :warnings="builtTheme.ok ? builtTheme.warnings : []"
+              @change="changeThemeChoice"
+            />
+            <label class="mb-5 flex items-center gap-2 text-sm">
+              Locale
               <select
-                v-model="editMode"
+                v-model.number="localeIndex"
                 class="rounded-md border border-brand-200 bg-white px-2 py-1.5 dark:border-brand-700 dark:bg-brand-900"
               >
-                <option value="toggle">Behind Customize</option>
-                <option value="always">Always shown</option>
+                <option
+                  v-for="(option, index) in LOCALES"
+                  :key="option.locale"
+                  :value="index"
+                >
+                  {{ option.label }}
+                </option>
               </select>
             </label>
-          </fieldset>
-          <fieldset class="mb-5">
-            <legend
-              class="mb-2 text-sm font-semibold text-brand-700 dark:text-brand-200"
-            >
-              Mode
-            </legend>
-            <div class="flex gap-4 text-sm">
-              <label
-                v-for="mode in ['light', 'dark'] as const"
-                :key="mode"
-                class="flex items-center gap-2"
-              >
-                <input
-                  v-model="theme"
-                  type="radio"
-                  name="color-mode"
-                  :value="mode"
-                />
-                {{ mode === 'light' ? 'Light' : 'Dark' }}
-              </label>
-            </div>
-          </fieldset>
-          <ThemePicker
-            :choice="themeChoice"
-            :error="builtTheme.ok ? null : builtTheme.error"
-            :warnings="builtTheme.ok ? builtTheme.warnings : []"
-            @change="changeThemeChoice"
-          />
-          <label class="mb-5 flex items-center gap-2 text-sm">
-            Locale
-            <select
-              v-model.number="localeIndex"
-              class="rounded-md border border-brand-200 bg-white px-2 py-1.5 dark:border-brand-700 dark:bg-brand-900"
-            >
-              <option
-                v-for="(option, index) in LOCALES"
-                :key="option.locale"
-                :value="index"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-          </label>
-        </SettingsDialog>
+          </SettingsDialog>
 
-        <SettingsDialog
-          :open="introOpen"
-          :title="INTRO_TITLE"
-          close-label="Close introduction"
-          @close="introOpen = false"
-        >
-          <div
-            class="max-w-3xl space-y-4 text-sm text-slate-700 dark:text-slate-300"
-          >
-            <p class="text-base">{{ INTRO_LEAD }}</p>
-            <section v-for="section in INTRO_SECTIONS" :key="section.heading">
-              <h3
-                class="mb-1 text-sm font-semibold text-brand-700 dark:text-brand-200"
-              >
-                {{ section.heading }}
-              </h3>
-              <ul class="list-disc space-y-1 pl-5 marker:text-brand-400">
-                <li v-for="item in section.items" :key="item">{{ item }}</li>
-              </ul>
-            </section>
+          <div :ref="setGridElement">
+            <WidgetSettingsProvider
+              :locale="localeOption.locale"
+              link-target="_blank"
+              :formatters="CELL_FORMATTERS"
+              :on-formatter-error="reportFormatterProblem"
+            >
+              <Dashboard
+                :widgets="widgets"
+                :layout="layout"
+                :on-layout-change="setLayout"
+                :default-layout="PAGED_LAYOUT"
+                :active-page="activePage"
+                :on-active-page-change="setActivePage"
+                :backup="backup"
+                :on-backup="setBackup"
+                :edit-mode="editMode"
+                draggable
+                :filters="dashboardFilters"
+                :filter-values="filterState.values.value"
+                :on-filter-change="filterState.setValues"
+                :theme="
+                  builtTheme.ok && builtTheme.styles !== null
+                    ? builtTheme.styles
+                    : undefined
+                "
+                :override-locks="isAdmin"
+                :on-retry="refresh"
+                freshness
+                :on-refresh="refresh"
+                :export-formats="['csv', 'svg', 'png']"
+                :on-export-error="reportExportProblem"
+                :load-detail="loadDetail"
+                :on-export-detail="exportDetail"
+                :detail="detail"
+                :on-detail-change="handleDetailChange"
+              />
+            </WidgetSettingsProvider>
           </div>
-        </SettingsDialog>
+        </section>
+      </div>
 
-        <div :ref="setGridElement">
-          <WidgetSettingsProvider
-            :locale="localeOption.locale"
-            link-target="_blank"
-            :formatters="CELL_FORMATTERS"
-            :on-formatter-error="reportFormatterProblem"
-          >
-            <Dashboard
-              :widgets="widgets"
-              :layout="layout"
-              :on-layout-change="setLayout"
-              :default-layout="PAGED_LAYOUT"
-              :active-page="activePage"
-              :on-active-page-change="setActivePage"
-              :backup="backup"
-              :on-backup="setBackup"
-              :edit-mode="editMode"
-              draggable
-              :filters="dashboardFilters"
-              :filter-values="filterState.values.value"
-              :on-filter-change="filterState.setValues"
-              :theme="
-                builtTheme.ok && builtTheme.styles !== null
-                  ? builtTheme.styles
-                  : undefined
-              "
-              :override-locks="isAdmin"
-              :on-retry="refresh"
-              freshness
-              :on-refresh="refresh"
-              :export-formats="['csv', 'svg', 'png']"
-              :on-export-error="reportExportProblem"
-              :load-detail="loadDetail"
-              :on-export-detail="exportDetail"
-              :detail="detail"
-              :on-detail-change="handleDetailChange"
-            />
-          </WidgetSettingsProvider>
-        </div>
-      </section>
+      <div
+        id="panel-builder"
+        role="tabpanel"
+        aria-labelledby="tab-builder"
+        class="pt-6"
+        :hidden="activeTab !== 'builder'"
+      >
+        <section aria-labelledby="builder-heading">
+          <h2 id="builder-heading" class="sr-only">
+            {{ TAB_INTROS.builder.title }}
+          </h2>
+          <div class="mb-4 flex items-center gap-3">
+            <button
+              type="button"
+              :class="iconButtonClass"
+              aria-haspopup="dialog"
+              aria-label="About this page"
+              title="About this page"
+              @click="introTab = 'builder'"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v5.5M12 7.6v.01" />
+              </svg>
+            </button>
+          </div>
+          <WidgetBuilder
+            :context="shopContext"
+            :theme="
+              builtTheme.ok && builtTheme.styles !== null
+                ? builtTheme.styles
+                : undefined
+            "
+          />
+        </section>
+      </div>
     </main>
+
+    <SettingsDialog
+      :open="introOpen"
+      :title="intro.title"
+      close-label="Close introduction"
+      @close="introTab = undefined"
+    >
+      <div
+        class="max-w-3xl space-y-4 text-sm text-slate-700 dark:text-slate-300"
+      >
+        <p class="text-base">{{ intro.lead }}</p>
+        <section v-for="section in intro.sections" :key="section.heading">
+          <h3
+            class="mb-1 text-sm font-semibold text-brand-700 dark:text-brand-200"
+          >
+            {{ section.heading }}
+          </h3>
+          <ul class="list-disc space-y-1 pl-5 marker:text-brand-400">
+            <li v-for="item in section.items" :key="item">{{ item }}</li>
+          </ul>
+        </section>
+      </div>
+    </SettingsDialog>
 
     <footer class="bg-brand-900 text-sm text-brand-200">
       <div
