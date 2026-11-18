@@ -46,6 +46,14 @@ export const TAB_INTROS: Readonly<Record<TabId, TabIntro>> = {
           'Layouts are saved in this browser and follow you across tabs.',
         ],
       },
+      {
+        heading: 'API adapter page',
+        items: [
+          'Four cards (a table, a KPI, a bar list and an alert list) are fed by one pretend orders API through defineAdapter.',
+          'The source shares a single request between them: each card says which request it came from, and the Refresh button reloads all four at once.',
+          'Simulate outage makes the API answer 503; refresh one card to see the failed-refresh note and its last good data.',
+        ],
+      },
     ],
   },
   builder: {
