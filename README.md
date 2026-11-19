@@ -53,7 +53,19 @@ A Vite + Vue 3 + TypeScript + Tailwind CSS app built from render functions and
 `<script setup>` components. The dashboard shows:
 
 - All widget types, loaded with `useWidgets` so each card fills in as its data arrives.
-- Pages with a page bar, customize mode, drag and drop, and swipe between pages.
+- Four pages with a page bar, customize mode, drag and drop, and swipe between pages.
+- An **API adapter** page: four cards (a table, a KPI, a bar list and an alert
+  list) fed by one pretend orders API through the toolkit's `defineAdapter`. A
+  `DataSource` in [`src/data/orderAdapters.ts`](./src/data/orderAdapters.ts)
+  holds the `fetch` code (against a local fixture,
+  [`src/data/fixtureApi.ts`](./src/data/fixtureApi.ts), which answers like
+  `fetch` and honors the abort signal), and each card has a pure mapper built
+  with `toTable`, `toKpi`, `toBarList` and `toAlertList`. The source has a
+  `scope`, so the four cards share one request: each says which API request it
+  came from, and Refresh reloads them all from a single new one. **Simulate
+  outage** makes the fixture answer 503, so refreshing one card shows the
+  failed-refresh badge and keeps its last good data. `bindProviders` checks the
+  widgets and providers fit together when the page loads.
 - Filters, the detail view (shareable in the URL) and CSV/SVG/PNG export.
 - Declared options, alternate views and clones through the Options dialog.
 - Themes (including `checkTheme` warnings), locales, light and dark mode.
