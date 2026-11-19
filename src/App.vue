@@ -271,7 +271,7 @@ function refreshData(): void {
   refresh();
 }
 
-// With three pages, a page two away from the one in view is released: its
+// With four pages, a page two away from the one in view is released: its
 // payloads are dropped and it loads again when the viewer returns to it.
 const pageInView = computed<string | undefined>(
   () => activePage.value ?? pageList(layout.value)[0]?.key
@@ -571,7 +571,7 @@ onBeforeUnmount(() => {
               <div class="grid gap-3 sm:grid-cols-2">
                 <ToggleSwitch
                   label="Pages"
-                  hint="Three pages with a page bar, or one page."
+                  hint="Four pages with a page bar, or one page."
                   :model-value="hasPages"
                   @update:model-value="togglePages"
                 />
@@ -587,7 +587,7 @@ onBeforeUnmount(() => {
                 />
                 <ToggleSwitch
                   label="Simulate outage"
-                  hint="Refreshing Revenue, Refund rate or Revenue by month fails."
+                  hint="Refreshing Revenue, Refund rate, Revenue by month or an API adapter card fails."
                   :model-value="outage"
                   @update:model-value="toggleOutage"
                 />
